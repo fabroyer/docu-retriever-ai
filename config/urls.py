@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.http import JsonResponse
-from django.urls import path
+from django.urls import path, include
 
 def check(request):
     """Check the health of the application."""
@@ -12,4 +12,5 @@ def check(request):
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/check/', check, name="check"),
+    path('api/documents/', include('documents.urls')),
 ]
