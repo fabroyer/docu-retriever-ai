@@ -1,19 +1,17 @@
-from pypdf import PdfReader
+from langchain_community.document_loaders import PyPDFLoader
+from langchain_core.documents import Document
 
-def extrac_text(file_path: str) -> str:
-    """Extract text from a PDF file.
+def load_pdf(file_path: str) -> list[Document]:
+    """Loads PDF documents and extract their content.
     Args:
         """
-    reader = PdfReader(file_path)
-    extracted_pages = []
+    loader = PyPDFLoader(file_path)
 
-    for page in reader.pages:
-        page_text = page.extract_text() or ""
-        extracted_pages.append(page_text)
+    try:
+        pages = loader.load()
+        print(f"PDF has {len(pages)} pages")
+    except Exception as e:
+        print(f"Error : {e}")
+        raise
 
-    full_text = "".join(extracted_pages).strip()
-
-    if not full_text:
-        raise ValueError("No text extracted from PDF file.")
-
-    return full_text
+    return pages
