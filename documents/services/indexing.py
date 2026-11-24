@@ -14,7 +14,7 @@ from langchain_chroma import Chroma
 load_dotenv()
 
 # ChromaDB configuration
-BASE_DIR = Path(__file__).resolve().parent[2]
+BASE_DIR = Path(__file__).resolve().parents[2]
 PERSIST_DIRECTORY = str(BASE_DIR / "chroma_db")
 COLLECTION_NAME = "documents"
 
