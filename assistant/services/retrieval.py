@@ -5,12 +5,14 @@ Retrieves relevant document chunks from ChromaDB.
 
 from langchain_openai import OpenAIEmbeddings
 from langchain_chroma import Chroma
+from pathlib import Path
 from dotenv import load_dotenv
 
 load_dotenv()
 
 # Chroma configuration
-PERSIST_DIRECTORY = "chroma_db"
+BASE_DIR = Path(__file__).resolve().parents[2]
+PERSIST_DIRECTORY = str(BASE_DIR / "chroma_db")
 COLLECTION_NAME = "documents"
 
 # Initialize embedding model

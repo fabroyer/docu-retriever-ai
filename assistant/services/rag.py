@@ -2,10 +2,13 @@
 RAG service.
 Generates answers based on retrieved documents chunks.
 """
-from typing import cast
+
+from operator import itemgetter
 
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.runnables import RunnablePassthrough
+from langchain_core.output_parsers import StrOutputParser
 
 from assistant.services.retrieval import get_retriever
 
@@ -14,33 +17,38 @@ llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 
 # Create the prompt
 prompt = ChatPromptTemplate.from_template("""
-Answer the question using only the following context.
-If the answer is not in the context, say that you don't know.
+Answer the question using only the information contained in the context.
+If the context does not contain enough information to answer, say that you don't know.
 
 Context:{context}
 Question:{question}
+
+Answer:
 """
 )
 
-def ask_question(question):
-    """Generates answers based on retrieved documents chunks."""
-
-    # Retrieve relevant document chunks
-    retriever = get_retriever()
-    documents = retriever.invoke(question)
+def format_docs(documents):
+    """Format retrieved documents into a single text."""
 
     # Combine the retrieved chunks into one context
-    context = "\n".join(
+    return "\n".join(
         document.page_content for document in documents
     )
 
-    # Create the prompt with the context and question
-    messages = prompt.format_messages(
-        context=context,
-        question=question,
-    )
+# Retrieve relevant document chunks
+retriever = get_retriever()
 
-    # Generate tje answer
-    response = llm.invoke(messages)
+rag_chain = (
+    {
+        "context": retriever | format_docs,
+        "question": RunnablePassthrough(),
+    }
+    | prompt
+    | llm
+    | StrOutputParser()
+)
 
-    return response.content
+def ask_question(question: str):
+    """Generate an answer using the RAG chain."""
+
+    return rag_chain.invoke(question)
