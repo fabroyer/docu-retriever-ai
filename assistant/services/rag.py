@@ -20,6 +20,7 @@ prompt = ChatPromptTemplate.from_template("""
 Answer the question using only the information contained in the context.
 If the context does not contain enough information to answer, say that you don't know.
 
+Conversation history: {chat_history}
 Context:{context}
 Question:{question}
 
@@ -40,15 +41,19 @@ retriever = get_retriever()
 
 rag_chain = (
     {
-        "context": retriever | format_docs,
-        "question": RunnablePassthrough(),
+        "context": itemgetter("question") | retriever | format_docs,
+        "question": itemgetter("question"),
+        "chat_history": itemgetter("chat_history"),
     }
     | prompt
     | llm
     | StrOutputParser()
 )
 
-def ask_question(question: str):
+def ask_question(question: str, chat_history: str = ""):
     """Generate an answer using the RAG chain."""
 
-    return rag_chain.invoke(question)
+    return rag_chain.invoke({
+        "question": question,
+        "chat_history": chat_history,
+    })

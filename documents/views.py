@@ -1,7 +1,7 @@
 from rest_framework import generics
 
 from .models import Document
-from .serializer import DocumentSerializer
+from .serializers import DocumentSerializer
 
 class DocumentListCreateAPIVIew(generics.ListCreateAPIView):
     queryset = Document.objects.all()

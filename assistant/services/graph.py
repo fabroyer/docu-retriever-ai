@@ -8,22 +8,29 @@ classification_prompt = ChatPromptTemplate.from_template("""
 You are a classifier for a document-answering assistant.
 Determine if the user's question is related to the content of the indexed documents.
 
-Return "relevant" if the question concerns the documents.
+Return "document" if the question concerns the documents.
+return "conversation" if the question concerns the previous messages.
 Return "irrelevant" if the question does not concern the documents.
 
 Question: {question}
+Conversation history: {chat_history}
+
+Return only one category : document, conversation or irrelevant.
 """)
 
 class GraphState(TypedDict):
     question: str
-    context: str
+    chat_history: str
     answer: str
     category: str
 
 def generate_answer(state: GraphState):
     """Generate an answer using the RAG chain"""
 
-    answer = rag_chain.invoke(state["question"])
+    answer = rag_chain.invoke({
+        "question": state["question"],
+        "chat_history": state["chat_history"],
+    })
 
     # Update state
     return {"answer": answer}
@@ -33,6 +40,7 @@ def classify_question(state: GraphState):
 
     messages = classification_prompt.format_messages(
         question=state["question"],
+        chat_history=state["chat_history"],
     )
     response = llm.invoke(messages)
 
@@ -46,7 +54,10 @@ def irrelevant_question(state: GraphState):
 def route_question(state: GraphState):
     """Route the question based on its category"""
 
-    if state["category"].strip().lower() == "relevant":
+    if state["category"].strip().lower() == "document":
+        return "generate_answer"
+
+    if state["category"].strip().lower() == "conversation":
         return "generate_answer"
 
     return "irrelevant_question"
@@ -73,10 +84,19 @@ graph.add_edge("irrelevant_question", END)
 # Compile
 graph = graph.compile()
 
-def run(question: str):
+# None if the question require memory.
+def run(question: str, chat_history: list = None):
     """Run the RAG"""
+
+    # None to prevent an error for the next step.
+    if chat_history is None:
+        chat_history = []
+
+    history = "\n".join(chat_history)
+
     result = graph.invoke({
         "question": question,
+        "chat_history": history,
         "answer": "",
         "category": "",
     })
